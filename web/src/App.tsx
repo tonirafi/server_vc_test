@@ -1,5 +1,8 @@
+
 import React, { useEffect, useRef } from "react";
 import io from "socket.io-client";
+
+
 
 const pc_config = {
   iceServers: [
@@ -13,13 +16,18 @@ const pc_config = {
     },
   ],
 };
-const SOCKET_SERVER_URL = "http://localhost:8080";
+const SOCKET_SERVER_URL = "http://localhost:8000";
 
 const App = () => {
   const socketRef = useRef<SocketIOClient.Socket>();
   const pcRef = useRef<RTCPeerConnection>();
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  
+
+  const userId= "111"
+  const clientId ="222"
+  const sparator ="$"
 
   const setVideoTracks = async () => {
     try {
@@ -28,6 +36,7 @@ const App = () => {
         audio: true,
       });
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+      
       if (!(pcRef.current && socketRef.current)) return;
       stream.getTracks().forEach((track) => {
         if (!pcRef.current) return;
@@ -36,26 +45,35 @@ const App = () => {
       pcRef.current.onicecandidate = (e) => {
         if (e.candidate) {
           if (!socketRef.current) return;
-          console.log("onicecandidate");
-          socketRef.current.emit("candidate", e.candidate);
+          console.log("send Ice");
+        
+          let data = {
+            userId: userId,
+            clientId: clientId,
+            data: `${e.candidate.sdpMid}${sparator}${e.candidate.sdpMLineIndex}${sparator}${e.candidate.candidate}`
+          }
+          socketRef.current.emit("ICE", data);
         }
       };
       pcRef.current.oniceconnectionstatechange = (e) => {
         console.log(e);
       };
       pcRef.current.ontrack = (ev) => {
-        console.log("add remotetrack success");
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = ev.streams[0];
+          console.log("add remotetrack success mantullll 1");
+          console.log(ev)
         }
       };
-      socketRef.current.emit("join_room", {
-        room: "1234",
+      socketRef.current.emit("STATE", {
+        userId: userId,
+        clientId: clientId
       });
     } catch (e) {
       console.error(e);
     }
   };
+
 
   const createOffer = async () => {
     console.log("create offer");
@@ -66,7 +84,12 @@ const App = () => {
         offerToReceiveVideo: true,
       });
       await pcRef.current.setLocalDescription(new RTCSessionDescription(sdp));
-      socketRef.current.emit("offer", sdp);
+      let data = {
+        userId: userId,
+        clientId: clientId,
+        data: sdp.sdp
+      }
+      socketRef.current.emit("OFFER",data);
     } catch (e) {
       console.error(e);
     }
@@ -83,7 +106,12 @@ const App = () => {
       });
       console.log("create answer");
       await pcRef.current.setLocalDescription(new RTCSessionDescription(mySdp));
-      socketRef.current.emit("answer", mySdp);
+      let data = {
+        userId: userId,
+        clientId: clientId,
+        data: mySdp.sdp
+      }
+      socketRef.current.emit("ANSWER",data);
     } catch (e) {
       console.error(e);
     }
@@ -93,27 +121,89 @@ const App = () => {
     socketRef.current = io.connect(SOCKET_SERVER_URL);
     pcRef.current = new RTCPeerConnection(pc_config);
 
-    socketRef.current.on("all_users", (allUsers: Array<{ id: string }>) => {
-      if (allUsers.length > 0) {
-        createOffer();
+    socketRef.current.on(userId, (state: String) => {
+      var value = state.split(" ");
+      var stateValue = value[0]
+      
+      if(state.startsWith("ACTION")){
+
       }
+
+      if(state.startsWith("STATE")){
+
+
+        if(stateValue =="NotReady"){
+
+        }
+
+        if(stateValue =="Ready"){
+          createOffer();
+        }
+
+      }
+      
+      if(stateValue =="OFFER"){
+
+       const value = state.split("___")
+
+        const data ={
+          sdp:  value[1],
+          type : "offer" as RTCSdpType
+        } 
+        console.log("Create Offer "+value[1]);
+        console.log(data);
+        createAnswer(new RTCSessionDescription(data));
+      }
+
+      if(stateValue =="ANSWER"){
+        const value = state.split("___")
+        if (!pcRef.current) return;
+        const data ={
+          sdp:  value[1],
+          type : "answer" as RTCSdpType
+        } 
+        console.log("Create answer "+value[1]);
+        console.log(data);
+        pcRef.current.setRemoteDescription(new RTCSessionDescription(data));
+      }
+
+      if(stateValue =="ICE"){
+        const value = state.split("___")
+        const results =  value[1].split("$")
+        const result={
+          sdpMid: results[0],
+          sdpMLineIndex : Number(results[1]),
+          candidate: results[2]
+        }
+        
+        console.log("Create ice "+result);
+        console.log(result);
+       let rTCIceCandidateInit = async (candidate: RTCIceCandidateInit) => {
+        if (!pcRef.current) return;
+        await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+        console.log("candidate add success");
+        }
+
+        rTCIceCandidateInit(result)
+      }
+    
     });
 
-    socketRef.current.on("getOffer", (sdp: RTCSessionDescription) => {
-      //console.log(sdp);
+  
+    socketRef.current.on("OFFER", (sdp: RTCSessionDescription) => {
       console.log("get offer");
       createAnswer(sdp);
     });
 
-    socketRef.current.on("getAnswer", (sdp: RTCSessionDescription) => {
+    socketRef.current.on("ANSWER", (sdp: RTCSessionDescription) => {
       console.log("get answer");
       if (!pcRef.current) return;
       pcRef.current.setRemoteDescription(new RTCSessionDescription(sdp));
-      //console.log(sdp);
+      console.log(sdp);
     });
 
     socketRef.current.on(
-      "getCandidate",
+      "ICE",
       async (candidate: RTCIceCandidateInit) => {
         if (!pcRef.current) return;
         await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
@@ -132,6 +222,18 @@ const App = () => {
       }
     };
   }, []);
+
+  
+
+
+  let runAction = (action: string) => (event: any) => {
+    let user = {
+      userId: userId,
+      clientId: clientId,
+      data: action
+    }
+      socketRef.current?.emit("ACTION",user)
+  }
 
   return (
     <div>
@@ -157,7 +259,30 @@ const App = () => {
         ref={remoteVideoRef}
         autoPlay
       />
+
+    <button onClick={
+      runAction("ShowSignature")
+    }>Show Signature</button>
+
+<button onClick={
+      runAction("ShowFrameFaceCard")
+    }>Show Selfi Card</button>
+
+<button onClick={
+      runAction("ShowFrameCard")
+    }>Show Card</button>
+
+<button onClick={
+      runAction("AgentHold")
+    }>Hold Agent</button>
+
+<button onClick={
+      runAction("Empty")
+    }>Close All Action</button>
     </div>
+    
+
+    
   );
 };
 
