@@ -13,62 +13,61 @@ let users = {};
 
 io.on("connection", (socket) => {
   socket.on("STATE", (data) => {
-    let client = users[data.clientId]
+    let client = users[data.clientRoomId]
 
-    console.log(`User ${data.userId} Connected`)
-    socket.emit(data.userId,"STATE Connected")
+    console.log(`User ${data.userRoomId} Connected`)
+    socket.emit(data.userRoomId,"STATE Connected")
 
-    users[data.userId]= {
+    users[data.userRoomId]= {
        socketId: socket.id,
-       userId: data.userId
+       userRoomId: data.userRoomId
      };
-    console.log(`Id Socket user ${data.userId} is ${users[data.userId].socketId}`)
+    console.log(`Id Socket user ${data.userRoomId} is ${users[data.userRoomId].socketId}`)
 
 
     if(client){
-      console.log(`Cliend Ready ${data.clientId} socket id ${users[data.clientId].socketId}`)
-      socket.emit(data.userId,"STATE Ready");
+      console.log(`Cliend Ready ${data.clientRoomId} socket id ${users[data.clientRoomId].socketId}`)
+      socket.emit(data.userRoomId,"STATE Ready");
     }else{
-      console.log(`Cliend Not Ready ${data.clientId}`)
-      socket.emit(data.userId,"STATE NotReady");
+      console.log(`Cliend Not Ready ${data.clientRoomId}`)
+      socket.emit(data.userRoomId,"STATE NotReady");
     }
     console.log(`Total user ${users.count}`)
   });
 
+  socket.on("DATA", (data) => {
+    console.log("Send data to Client " + data.clientRoomId);
+    socket.to(users[data.clientRoomId].socketId).emit(data.clientRoomId,"DATA "+JSON.stringify(data))
+
+  });
 
   socket.on("ACTION", (data) => {
-    console.log(`Send Action to Client  ${data.clientId} && socket Id ${users[data.clientId].socketId}`)
-    socket.to(users[data.clientId].socketId).emit(data.clientId,"ACTION "+data.data)
+    console.log(`Send Action to Client  ${data.clientRoomId} && socket Id ${users[data.clientRoomId].socketId}`)
+    socket.to(users[data.clientRoomId].socketId).emit(data.clientRoomId,"ACTION "+data.data)
   });
   
 
   socket.on("OFFER", (data) => {
-    console.log(`Send OFFER to Client  ${data.clientId} && socket Id ${users[data.clientId].socketId}`)
-    socket.to(users[data.clientId].socketId).emit(data.clientId,"OFFER "+ data.data)
+    console.log(`Send OFFER to Client  ${data.clientRoomId} && socket Id ${users[data.clientRoomId].socketId}`)
+    socket.to(users[data.clientRoomId].socketId).emit(data.clientRoomId,"OFFER "+ data.data)
 
-    console.log(`Send status Creating to Client ${data.clientId}`)
-    socket.to(users[data.clientId].socketId).emit(data.clientId,"STATE Creating")
+    console.log(`Send status Creating to Client ${data.clientRoomId}`)
+    socket.to(users[data.clientRoomId].socketId).emit(data.clientRoomId,"STATE Creating")
    
 
   });
 
   socket.on("ANSWER", (data) => {
-    console.log(`Send ANSWER to Client  ${data.clientId} && socket Id ${users[data.clientId].socketId}`)
-    socket.to(users[data.clientId].socketId).emit(data.clientId,"ANSWER "+ data.data);
-    socket.to(users[data.clientId].socketId).emit(data.clientId,"DATA "+ {
-      nameAgent:"Lisa Agent",
-      urlVideoJingle:"",
-      InfoHold:"",
-      InfoHoldAgent:""
-    });
-    console.log("Send status Active to Client " + data.clientId);
-    socket.to(users[data.clientId].socketId).emit(data.clientId,"STATE Active")
+    console.log(`Send ANSWER to Client  ${data.clientRoomId} && socket Id ${users[data.clientRoomId].socketId}`)
+    socket.to(users[data.clientRoomId].socketId).emit(data.clientRoomId,"ANSWER "+ data.data);
+    console.log("Send status Active to Client " + data.clientRoomId);
+    socket.to(users[data.clientRoomId].socketId).emit(data.clientRoomId,"STATE Active")
 
   });
 
   socket.on("ICE", (data) => {
-    console.log(`Send ICE to Client  ${data.clientId} && socket Id ${users[data.clientId].socketId}`)
-    socket.to(users[data.clientId].socketId).emit(data.clientId,"ICE "+ data.data);
+    console.log(`Send ICE to Client  ${data.clientRoomId} && socket Id ${users[data.clientRoomId].socketId}`)
+    socket.to(users[data.clientRoomId].socketId).emit(data.clientRoomId,"ICE "+ data.data);
    
   });
 
@@ -77,9 +76,9 @@ io.on("connection", (socket) => {
 
    let user = Object.values(users).filter(user => user.socketId === socket.id)
     if(user){
-      delete users[user.userId];
+      delete users[user.userRoomId];
     }
-    console.log(`[${user.userId}]: ${socket.id} exit`);
+    console.log(`[${user.userRoomId}]: ${socket.id} exit`);
     console.log(users);
   });
 });

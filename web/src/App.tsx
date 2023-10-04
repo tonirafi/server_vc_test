@@ -25,8 +25,8 @@ const App = () => {
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   
 
-  const userId= "111"
-  const clientId ="222"
+  const userRoomId= "111"
+  const clientRoomId ="222"
   const sparator ="$"
 
   const setVideoTracks = async () => {
@@ -48,11 +48,11 @@ const App = () => {
           console.log("send Ice");
         
           let data = {
-            userId: userId,
-            clientId: clientId,
-            data: `${e.candidate.sdpMid}${sparator}${e.candidate.sdpMLineIndex}${sparator}${e.candidate.candidate}`
+            userRoomId: userRoomId,
+            clientRoomId: clientRoomId,
+            data:`${e.candidate.sdpMid}${sparator}${e.candidate.sdpMLineIndex}${sparator}${e.candidate.candidate}`
           }
-          socketRef.current.emit("ICE", data);
+          socketRef.current.emit("ICE",data);
         }
       };
       pcRef.current.oniceconnectionstatechange = (e) => {
@@ -66,8 +66,8 @@ const App = () => {
         }
       };
       socketRef.current.emit("STATE", {
-        userId: userId,
-        clientId: clientId
+        userRoomId: userRoomId,
+        clientRoomId: clientRoomId
       });
     } catch (e) {
       console.error(e);
@@ -85,8 +85,8 @@ const App = () => {
       });
       await pcRef.current.setLocalDescription(new RTCSessionDescription(sdp));
       let data = {
-        userId: userId,
-        clientId: clientId,
+        userRoomId: userRoomId,
+        clientRoomId: clientRoomId,
         data: sdp.sdp
       }
       socketRef.current.emit("OFFER",data);
@@ -107,11 +107,22 @@ const App = () => {
       console.log("create answer");
       await pcRef.current.setLocalDescription(new RTCSessionDescription(mySdp));
       let data = {
-        userId: userId,
-        clientId: clientId,
+        userRoomId: userRoomId,
+        clientRoomId: clientRoomId,
         data: mySdp.sdp
       }
       socketRef.current.emit("ANSWER",data);
+
+
+      let dataUser = {
+        userRoomId: userRoomId,
+        clientRoomId: clientRoomId,
+        nameAgent: "Lisa Agent",
+        urlVideoJingle: "https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_30mb.mp4",
+        InfoHold:"Mohon tunggu sebentar, dalam proses menghubungkan.",
+        InfoHoldAgent:"Mohon tunggu sebentar, saat ini agent sedang Hold pembicaraan ini."
+      }
+      socketRef.current.emit("DATA",dataUser);
     } catch (e) {
       console.error(e);
     }
@@ -121,7 +132,7 @@ const App = () => {
     socketRef.current = io.connect(SOCKET_SERVER_URL);
     pcRef.current = new RTCPeerConnection(pc_config);
 
-    socketRef.current.on(userId, (state: String) => {
+    socketRef.current.on(userRoomId, (state: String) => {
       var value = state.split(" ");
       var stateValue = value[0]
       
@@ -189,28 +200,6 @@ const App = () => {
     
     });
 
-  
-    socketRef.current.on("OFFER", (sdp: RTCSessionDescription) => {
-      console.log("get offer");
-      createAnswer(sdp);
-    });
-
-    socketRef.current.on("ANSWER", (sdp: RTCSessionDescription) => {
-      console.log("get answer");
-      if (!pcRef.current) return;
-      pcRef.current.setRemoteDescription(new RTCSessionDescription(sdp));
-      console.log(sdp);
-    });
-
-    socketRef.current.on(
-      "ICE",
-      async (candidate: RTCIceCandidateInit) => {
-        if (!pcRef.current) return;
-        await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-        console.log("candidate add success");
-      }
-    );
-
     setVideoTracks();
 
     return () => {
@@ -228,8 +217,8 @@ const App = () => {
 
   let runAction = (action: string) => (event: any) => {
     let user = {
-      userId: userId,
-      clientId: clientId,
+      userRoomId: userRoomId,
+      clientRoomId: clientRoomId,
       data: action
     }
       socketRef.current?.emit("ACTION",user)
@@ -251,8 +240,6 @@ const App = () => {
       <video
         id="remotevideo"
         style={{
-          width: 240,
-          height: 240,
           margin: 5,
           backgroundColor: "black",
         }}
