@@ -37,6 +37,8 @@ io.on("connection", (socket) => {
 
   socket.on("DATA", (data) => {
     console.log("Send data to Client " + data.clientRoomId);
+
+    console.log("data " + JSON.stringify(data));
     socket.to(users[data.clientRoomId].socketId).emit(data.clientRoomId,"DATA "+JSON.stringify(data))
 
   });
