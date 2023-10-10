@@ -16,7 +16,7 @@ const pc_config = {
     },
   ],
 };
-const SOCKET_SERVER_URL = "http://localhost:8000";
+const SOCKET_SERVER_URL = "https://server-vc-new.vercel.app:8000";
 
 const App = () => {
   const socketRef = useRef<SocketIOClient.Socket>();
