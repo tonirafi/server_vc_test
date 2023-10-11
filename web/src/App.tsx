@@ -16,7 +16,7 @@ const pc_config = {
     },
   ],
 };
-const SOCKET_SERVER_URL = "https://server-vc-new.vercel.app:8000";
+const SOCKET_SERVER_URL = "http://localhost:8000";
 
 const App = () => {
   const socketRef = useRef<SocketIOClient.Socket>();
@@ -45,25 +45,31 @@ const App = () => {
       pcRef.current.onicecandidate = (e) => {
         if (e.candidate) {
           if (!socketRef.current) return;
-          console.log("send Ice");
-        
           let data = {
             userRoomId: userRoomId,
             clientRoomId: clientRoomId,
             data:`${e.candidate.sdpMid}${sparator}${e.candidate.sdpMLineIndex}${sparator}${e.candidate.candidate}`
           }
+
+           console.log("send Ice "+JSON.stringify(e.candidate));
           socketRef.current.emit("ICE",data);
         }
       };
+
+      pcRef.current.onicecandidateerror = (e) => {
+           console.log("error Ice "+JSON.stringify(e));
+      };
+      
       pcRef.current.oniceconnectionstatechange = (e) => {
         console.log(e);
+        console.log("masuk send Ice"+JSON.stringify(e));
       };
-      pcRef.current.ontrack = (ev) => {
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = ev.streams[0];
-          console.log("add remotetrack success mantullll 1");
-          console.log(ev)
-        }
+
+      pcRef.current.ontrack = ({transceiver, streams: [stream]}) => {
+         
+            if (remoteVideoRef.current) {
+                remoteVideoRef.current.srcObject = new MediaStream([transceiver.receiver.track]);
+            } 
       };
       socketRef.current.emit("STATE", {
         userRoomId: userRoomId,
@@ -187,8 +193,8 @@ const App = () => {
           candidate: results[2]
         }
         
-        console.log("Create ice "+result);
-        console.log(result);
+        console.log("reciver Ice "+`${result.sdpMid}${sparator}${result.sdpMLineIndex}${sparator}${result.candidate}`);
+
        let rTCIceCandidateInit = async (candidate: RTCIceCandidateInit) => {
         if (!pcRef.current) return;
         await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
@@ -240,6 +246,8 @@ const App = () => {
       <video
         id="remotevideo"
         style={{
+          width: 240,
+          height: 240,
           margin: 5,
           backgroundColor: "black",
         }}
