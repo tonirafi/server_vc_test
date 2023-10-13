@@ -6,17 +6,15 @@ import io from "socket.io-client";
 
 const pc_config = {
   iceServers: [
-    // {
-    //   urls: 'stun:[STUN_IP]:[PORT]',
-    //   'credentials': '[YOR CREDENTIALS]',
-    //   'username': '[USERNAME]'
-    // },
-    {
-      urls: "stun:stun.l.google.com:19302",
-    },
+    {urls: ["turn:103.79.131.25:3478?transport=udp"
+    ],
+  username:"tony",
+  credential:"123456"
+ },
+    {urls:["stun:103.79.131.25:3478"]}
   ],
 };
-const SOCKET_SERVER_URL = "http://localhost:8000";
+const SOCKET_SERVER_URL = "http://103.79.131.25:8000";
 
 const App = () => {
   const socketRef = useRef<SocketIOClient.Socket>();
