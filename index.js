@@ -11,8 +11,8 @@ let socketio = require("socket.io");
 var fs = require('fs');
 
 var httpsOptions = {
-    key: fs.readFileSync('../conf/key.pem'),
-    cert: fs.readFileSync('../conf/csr.pem')
+    key: fs.readFileSync('../conf/server.key'),
+    cert: fs.readFileSync('../conf/server.cert')
 };
 
 let server = http.createServer(app);
