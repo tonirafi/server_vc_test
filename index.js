@@ -1,29 +1,13 @@
 let express = require("express");
 let http = require("http");
-let https = require("https");
 let app = express();
-let appSecurity = express();
 let cors = require("cors");
-
+let server = http.createServer(app);
 let socketio = require("socket.io");
+let io = socketio.listen(server);
 
-
-var fs = require('fs');
-
-var httpsOptions = {
-    key: fs.readFileSync('../conf/server.key'),
-    cert: fs.readFileSync('../conf/server.cert')
-};
-
-// let server = http.createServer(app);
-// app.use(cors());
-// const PORT = process.env.PORT || 8021;
-
-let serverSecurity = https.createServer(httpsOptions,appSecurity);
-appSecurity.use(cors());
-const PORTS = process.env.PORT || 8011;
-
-let io = socketio.listen(serverSecurity);
+app.use(cors());
+const PORT = process.env.PORT || 8000;
 
 let users = {};
 
@@ -101,10 +85,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// server.listen(PORT, () => {
-//   console.log(`server running on ${PORT}`);
-// });
-
-serverSecurity.listen(PORTS, () => {
-  console.log(`server running on ${PORTS}`);
+server.listen(PORT, () => {
+  console.log(`server running on ${PORT}`);
 });
