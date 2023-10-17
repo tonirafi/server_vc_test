@@ -15,9 +15,9 @@ var httpsOptions = {
     cert: fs.readFileSync('../conf/server.cert')
 };
 
-let server = http.createServer(app);
-app.use(cors());
-const PORT = process.env.PORT || 8021;
+// let server = http.createServer(app);
+// app.use(cors());
+// const PORT = process.env.PORT || 8021;
 
 let serverSecurity = https.createServer(httpsOptions,appSecurity);
 appSecurity.use(cors());
@@ -101,9 +101,9 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`server running on ${PORT}`);
-});
+// server.listen(PORT, () => {
+//   console.log(`server running on ${PORT}`);
+// });
 
 serverSecurity.listen(PORTS, () => {
   console.log(`server running on ${PORTS}`);
